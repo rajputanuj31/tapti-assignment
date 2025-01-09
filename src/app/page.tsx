@@ -1,101 +1,144 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Playlist, PlaylistItem } from '@/services/youtube';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
+  const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const CHANNEL_ID = 'UCpVm7bg6pXKo1Pr6k5kxG9A'; 
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`/api/playlists?channelId=${CHANNEL_ID}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPlaylists(data);
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+        setError('Failed to load playlists. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlaylists();
+  }, []);
+
+  useEffect(() => {
+    const fetchPlaylistItems = async () => {
+      if (!selectedPlaylist) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(
+          `/api/playlist-items?playlistId=${selectedPlaylist}`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPlaylistItems(data);
+      } catch (error) {
+        console.error('Error fetching playlist items:', error);
+        setError('Failed to load playlist items. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedPlaylist) {
+      fetchPlaylistItems();
+    }
+  }, [selectedPlaylist]);
+
+  return (
+    <div className="min-h-screen p-8">
+      <h1 className="text-2xl font-bold mb-6">YouTube Playlists</h1>
+      
+      {loading && (
+        <div className="text-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2">Loading...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
+          <div className="space-y-4">
+            {playlists.map((playlist) => (
+              <div
+                key={playlist.id}
+                className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                  selectedPlaylist === playlist.id
+                    ? 'bg-gray-200 dark:bg-gray-800'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-900'
+                }`}
+                onClick={() => setSelectedPlaylist(playlist.id)}
+              >
+                <div className="flex gap-4">
+                  <Image
+                    src={playlist.thumbnailUrl}
+                    alt={playlist.title}
+                    width={90}
+                    height={60}
+                    className="rounded"
+                  />
+                  <div>
+                    <h3 className="font-semibold">{playlist.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {playlist.itemCount} videos
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            {playlistItems.map((item) => (
+              <div
+                key={item.id}
+                className="p-4 rounded-lg border border-gray-200 dark:border-gray-800"
+              >
+                <div className="flex gap-4">
+                  <Image
+                    src={item.thumbnailUrl}
+                    alt={item.title}
+                    width={120}
+                    height={90}
+                    className="rounded"
+                  />
+                  <div>
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(item.publishedAt).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm mt-2">{item.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
