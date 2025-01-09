@@ -34,7 +34,10 @@ export class YouTubeService {
       id: item.id!,
       title: item.snippet!.title!,
       description: item.snippet!.description!,
-      thumbnailUrl: item.snippet!.thumbnails?.default?.url!,
+      thumbnailUrl: item.snippet!.thumbnails?.maxres?.url || 
+                   item.snippet!.thumbnails?.high?.url ||
+                   item.snippet!.thumbnails?.medium?.url ||
+                   item.snippet!.thumbnails?.default?.url!,
       itemCount: item.contentDetails!.itemCount!,
     })) || [];
   }
@@ -50,7 +53,10 @@ export class YouTubeService {
       id: item.id!,
       title: item.snippet!.title!,
       description: item.snippet!.description!,
-      thumbnailUrl: item.snippet!.thumbnails?.default?.url!,
+      thumbnailUrl: item.snippet!.thumbnails?.maxres?.url ||
+                   item.snippet!.thumbnails?.high?.url ||
+                   item.snippet!.thumbnails?.medium?.url ||
+                   item.snippet!.thumbnails?.default?.url!,
       videoId: item.snippet!.resourceId?.videoId!,
       publishedAt: item.snippet!.publishedAt!,
     })) || [];

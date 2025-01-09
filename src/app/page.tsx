@@ -1,144 +1,130 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { Playlist, PlaylistItem } from '@/services/youtube';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+const SAMPLE_CHANNELS = [
+  { name: 'Google Developers', id: 'UC_x5XG1OV2P6uZZ5FSM9Ttw' },
+  { name: 'NASA', id: 'UCLA_DiR1FfKNvjuUpBHmylQ' },
+  { name: 'TED', id: 'UCAuUUnT6oDeKwE6v1NGQxug' },
+  { name: 'Kurzgesagt', id: 'UCsXVk37bltHxD1rDPwtNM8Q' },
+  { name: 'Veritasium', id: 'UCHnyfMqiRRG1u-2MsSQLbXA' },
+  { name: 'National Geographic', id: 'UCpVm7bg6pXKo1Pr6k5kxG9A' },
+];
 
 export default function Home() {
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
-  const [playlistItems, setPlaylistItems] = useState<PlaylistItem[]>([]);
+  const [channelId, setChannelId] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const CHANNEL_ID = 'UCpVm7bg6pXKo1Pr6k5kxG9A'; 
-
-  useEffect(() => {
-    const fetchPlaylists = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`/api/playlists?channelId=${CHANNEL_ID}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setPlaylists(data);
-      } catch (error) {
-        console.error('Error fetching playlists:', error);
-        setError('Failed to load playlists. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlaylists();
-  }, []);
-
-  useEffect(() => {
-    const fetchPlaylistItems = async () => {
-      if (!selectedPlaylist) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(
-          `/api/playlist-items?playlistId=${selectedPlaylist}`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setPlaylistItems(data);
-      } catch (error) {
-        console.error('Error fetching playlist items:', error);
-        setError('Failed to load playlist items. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (selectedPlaylist) {
-      fetchPlaylistItems();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!channelId.trim()) {
+      setError('Please enter a channel ID');
+      return;
     }
-  }, [selectedPlaylist]);
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/playlists?channelId=${channelId}`);
+      if (!response.ok) {
+        throw new Error('Invalid channel ID');
+      }
+      
+      localStorage.setItem('youtubeChannelId', channelId);
+      router.push(`/playlists?channelId=${channelId}`);
+    } catch (error) {
+      setError('Invalid channel ID. Please check and try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleSampleClick = (id: string) => {
+    setChannelId(id);
+  };
 
   return (
-    <div className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-6">YouTube Playlists</h1>
-      
-      {loading && (
-        <div className="text-center p-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Loading...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
-          {error}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-          <div className="space-y-4">
-            {playlists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className={`p-4 rounded-lg cursor-pointer transition-colors ${
-                  selectedPlaylist === playlist.id
-                    ? 'bg-gray-200 dark:bg-gray-800'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-900'
-                }`}
-                onClick={() => setSelectedPlaylist(playlist.id)}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="w-full max-w-md mx-auto px-4 py-12">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-95 border border-gray-200 dark:border-gray-700">
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600 mb-8 text-center">
+            YouTube Playlist Viewer
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label 
+                htmlFor="channelId" 
+                className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
               >
-                <div className="flex gap-4">
-                  <Image
-                    src={playlist.thumbnailUrl}
-                    alt={playlist.title}
-                    width={90}
-                    height={60}
-                    className="rounded"
-                  />
-                  <div>
-                    <h3 className="font-semibold">{playlist.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {playlist.itemCount} videos
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                Enter YouTube Channel ID
+              </label>
+              <input
+                type="text"
+                id="channelId"
+                value={channelId}
+                onChange={(e) => setChannelId(e.target.value)}
+                placeholder="e.g., UCpVm7bg6pXKo1Pr6k5kxG9A"
+                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg
+                         focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         placeholder-gray-400 dark:placeholder-gray-500
+                         transition-all duration-200"
+              />
+              {error && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400 font-medium">
+                  {error}
+                </p>
+              )}
+            </div>
 
-          <div className="space-y-4">
-            {playlistItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 rounded-lg border border-gray-200 dark:border-gray-800"
-              >
-                <div className="flex gap-4">
-                  <Image
-                    src={item.thumbnailUrl}
-                    alt={item.title}
-                    width={120}
-                    height={90}
-                    className="rounded"
-                  />
-                  <div>
-                    <h3 className="font-semibold">{item.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(item.publishedAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm mt-2">{item.description}</p>
-                  </div>
-                </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <p className="font-medium text-gray-700 dark:text-gray-300 mb-3">Sample Channels:</p>
+              <div className="grid grid-cols-1 gap-2">
+                {SAMPLE_CHANNELS.map((channel) => (
+                  <button
+                    key={channel.id}
+                    type="button"
+                    onClick={() => handleSampleClick(channel.id)}
+                    className="text-left px-3 py-2 rounded-md text-sm
+                             hover:bg-indigo-50 dark:hover:bg-gray-600
+                             text-gray-700 dark:text-gray-300
+                             transition-colors duration-150
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  >
+                    {channel.name}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 px-6 rounded-lg shadow-lg text-sm font-semibold 
+                       text-white bg-gradient-to-r from-indigo-600 to-purple-600 
+                       hover:from-indigo-700 hover:to-purple-700 
+                       focus:outline-none focus:ring-4 focus:ring-indigo-500/50 
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       transform transition-all duration-200 hover:scale-[1.02]
+                       active:scale-[0.98]`}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span className="ml-3">Loading...</span>
+                </div>
+              ) : (
+                'View Playlists'
+              )}
+            </button>
+          </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }
