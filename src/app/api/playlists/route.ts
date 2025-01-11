@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   let channelId = searchParams.get('channelId');
   
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get('youtube_access_token')?.value;
 
   if (!accessToken) {

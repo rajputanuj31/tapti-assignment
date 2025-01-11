@@ -30,25 +30,16 @@ export async function GET(request: Request) {
     }
 
     const data = await tokenResponse.json();
-    
-    // Get the cookies instance
-    const cookieStore = cookies();
-    
-    // Store the access token in an HTTP-only cookie
-    cookieStore.set('youtube_access_token', data.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 3600 // 1 hour
-    });
 
-    // If we received a refresh token, store it as well
+    // Prepare Set-Cookie headers
+    const cookies = [
+      `youtube_access_token=${data.access_token}; HttpOnly; Secure; SameSite=Lax; Max-Age=3600`,
+    ];
+
     if (data.refresh_token) {
-      cookieStore.set('youtube_refresh_token', data.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
+      cookies.push(
+        `youtube_refresh_token=${data.refresh_token}; HttpOnly; Secure; SameSite=Lax`
+      );
     }
 
     // Fetch the user's channel ID
@@ -73,17 +64,21 @@ export async function GET(request: Request) {
       throw new Error('No channel ID found');
     }
 
-    // Store the channel ID in a cookie
-    cookieStore.set('youtube_channel_id', channelId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 3600 // 1 hour
+    cookies.push(
+      `youtube_channel_id=${channelId}; HttpOnly; Secure; SameSite=Lax; Max-Age=3600`
+    );
+
+    // Redirect to the playlists page with Set-Cookie headers
+    const baseUrl = process.env.GOOGLE_REDIRECT_URI!.split('/api/auth/callback')[0];
+    const response = new Response(null, {
+      status: 302,
+      headers: {
+        Location: `${baseUrl}/playlists?channelId=${channelId}`,
+        'Set-Cookie': cookies.join(', '),
+      },
     });
 
-    // Redirect to the playlists page with the channel ID
-    const baseUrl = process.env.GOOGLE_REDIRECT_URI!.split('/api/auth/callback')[0];
-    return Response.redirect(`${baseUrl}/playlists?channelId=${channelId}`);
+    return response;
   } catch (error) {
     console.error('Error during authentication:', error);
     return new Response('Authentication failed', { status: 500 });

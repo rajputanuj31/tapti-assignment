@@ -3,18 +3,21 @@ import { cookies } from 'next/headers';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const playlistId = searchParams.get('playlistId');
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get('youtube_access_token')?.value;
-
-  if (!accessToken) {
-    return new Response('Unauthorized', { status: 401 });
-  }
 
   if (!playlistId) {
     return new Response('Missing playlistId parameter', { status: 400 });
   }
 
   try {
+    // Correctly handle cookies
+    const cookieStore = await cookies();
+    const accessTokenCookie = cookieStore.get('youtube_access_token');
+    const accessToken = accessTokenCookie?.value;
+
+    if (!accessToken) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50`,
       {
@@ -33,11 +36,12 @@ export async function GET(request: Request) {
 
     const data = await response.json();
 
-    // Format the response to match our expected structure
+    // Transform the data properly
     const formattedItems = data.items.map((item: any) => {
-      const thumbnail = item.snippet.thumbnails?.medium?.url || 
-                       item.snippet.thumbnails?.default?.url ||
-                       null;
+      const thumbnail =
+        item.snippet.thumbnails?.medium?.url ||
+        item.snippet.thumbnails?.default?.url ||
+        null;
 
       return {
         id: item.id,
@@ -55,4 +59,4 @@ export async function GET(request: Request) {
     console.error('Error fetching playlist items:', error);
     return new Response('Failed to fetch playlist items', { status: 500 });
   }
-} 
+}
