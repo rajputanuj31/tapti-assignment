@@ -7,22 +7,40 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('youtube_access_token')?.value;
 
-  if (!accessToken) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
   try {
-    // If no channelId is provided, use 'mine=true' to get the authenticated user's playlists
-    const endpoint = channelId 
-      ? `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&channelId=${channelId}&maxResults=50`
-      : 'https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50';
+    let headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
 
-    const response = await fetch(endpoint, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json',
-      },
-    });
+    // If we have an access token, use OAuth
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    } else {
+      // If no access token, use API key
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      if (!apiKey) {
+        throw new Error('YouTube API key is not configured');
+      }
+      channelId = channelId || 'mine'; // Default to 'mine' if no channelId provided
+    }
+
+    // Construct the endpoint URL
+    let endpoint = 'https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails';
+    
+    if (accessToken && !channelId) {
+      endpoint += '&mine=true';
+    } else {
+      endpoint += `&channelId=${channelId}`;
+    }
+    
+    endpoint += '&maxResults=50';
+    
+    // Add API key if we're not using OAuth
+    if (!accessToken) {
+      endpoint += `&key=${process.env.YOUTUBE_API_KEY}`;
+    }
+
+    const response = await fetch(endpoint, { headers });
 
     if (!response.ok) {
       const errorData = await response.json();

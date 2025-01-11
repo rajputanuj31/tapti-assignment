@@ -9,24 +9,29 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Correctly handle cookies
     const cookieStore = await cookies();
-    const accessTokenCookie = cookieStore.get('youtube_access_token');
-    const accessToken = accessTokenCookie?.value;
+    const accessToken = cookieStore.get('youtube_access_token')?.value;
 
-    if (!accessToken) {
-      return new Response('Unauthorized', { status: 401 });
+    let headers: HeadersInit = {
+      'Accept': 'application/json',
+    };
+
+    // Construct the base endpoint URL
+    let endpoint = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50`;
+
+    // If we have an access token, use OAuth
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    } else {
+      // If no access token, use API key
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      if (!apiKey) {
+        throw new Error('YouTube API key is not configured');
+      }
+      endpoint += `&key=${apiKey}`;
     }
 
-    const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      }
-    );
+    const response = await fetch(endpoint, { headers });
 
     if (!response.ok) {
       const errorData = await response.json();
