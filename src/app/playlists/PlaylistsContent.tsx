@@ -44,29 +44,81 @@ export default function PlaylistsContent() {
     fetchPlaylists();
   }, [channelId, router]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <p className="text-red-500 text-xl font-semibold">{error}</p>
+        <Link href="/" className="text-indigo-500 hover:text-indigo-600 underline">
+          Return to Home
+        </Link>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-      {playlists.map((playlist) => (
-        <Link href={`/playlists/${playlist.id}`} key={playlist.id}>
-          <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-            {playlist.thumbnail && (
-              <img
-                src={playlist.thumbnail}
-                alt={playlist.title}
-                className="w-full h-48 object-cover rounded-md"
-              />
-            )}
-            <h2 className="text-xl font-bold mt-2">{playlist.title}</h2>
-            <p className="text-gray-600 mt-1">{playlist.description}</p>
-            <p className="text-sm text-gray-500 mt-2">
-              {playlist.itemCount} videos
-            </p>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+          YouTube Playlists
+        </h1>
+        <Link
+          href="/"
+          className="inline-flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors duration-200"
+        >
+          ← Back to Home
         </Link>
-      ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {playlists.map((playlist) => (
+          <Link
+            key={playlist.id}
+            href={`/playlists/${playlist.id}`}
+            className="group"
+          >
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="aspect-video relative">
+                {playlist.thumbnail && (
+                  <img
+                    src={playlist.thumbnail}
+                    alt={playlist.title}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
+                  {playlist.itemCount} videos
+                </div>
+              </div>
+              <div className="p-5 space-y-3">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white group-hover:text-indigo-500 transition-colors duration-200 line-clamp-2">
+                  {playlist.title}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                  {playlist.description}
+                </p>
+                <div className="flex justify-between items-center pt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(playlist.publishedAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </p>
+                  <span className="text-xs text-indigo-500 group-hover:text-indigo-600">
+                    View Playlist →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 } 
